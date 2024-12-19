@@ -70,4 +70,12 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+const verifyUser = (req, res) => {
+  try {
+    return res.status(203).json(req.user);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+module.exports = { register, login, verifyUser };

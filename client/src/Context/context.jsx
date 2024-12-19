@@ -1,9 +1,10 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const [userId, setUserId] = useState("");
   const BASE_URL = process.env.NEXT_PUBLIC_API;
   const userAuthentication = async (formData, process) => {
     console.log("Call vako xa hai ta kta ho");
@@ -27,8 +28,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const isValidUser = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/verifyUser`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return console.log("An error has pccured");
+      }
+      console.log(data);
+      setUserId(data._id);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ userAuthentication }}>
+    <AuthContext.Provider value={{ userAuthentication, isValidUser, userId }}>
       {children}
     </AuthContext.Provider>
   );
