@@ -1,15 +1,19 @@
 "use client";
 import { useAuth } from "@/Context/context";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import "../styles/login.css";
 import Link from "next/link";
 import { useState } from "react";
 export default function page() {
-  const { userAuthentication } = useAuth();
+  const { userAuthentication, isValidUser, userId } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  const router = useRouter();
 
   const handleChange = (event) => {
     setFormData((prevState) => ({
@@ -17,6 +21,16 @@ export default function page() {
       [event.target.name]: event.target.value,
     }));
   };
+
+  useEffect(() => {
+    if (userId) {
+      router.push(`/home/${userId}`);
+    }
+  }, [isValidUser, userId]);
+
+  useEffect(() => {
+    isValidUser();
+  }, []);
 
   const loginUser = (e) => {
     e.preventDefault();

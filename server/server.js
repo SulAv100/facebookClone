@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 
 const corsOptions = {
-  origin: "http://localhost:3001",
+  origin: "http://localhost:3000",
   credentials: true,
   methods: "GET,POST,PATCH,PUT,DELETE",
   allowedHeaders: "Content-Type,Authorization",
@@ -37,7 +37,7 @@ app.get("/", (req, res) => {
   return res.status(200).json("Welcome to the server start point ");
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5173;
 app.listen(PORT, () => {
   console.log(`The server is running at port ${PORT}`);
 });
