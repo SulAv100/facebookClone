@@ -1,11 +1,13 @@
 import '../styles/stories.css'
 export default function Stories() {
-    const stories = [
-      { id: 1, name: "Create Story", isCreateStory: true },
-      { id: 2, name: "Srijana Danuwar", image: "https://via.placeholder.com/130x200" },
-      { id: 3, name: "Manish Giri", image: "https://via.placeholder.com/130x200" },
-      { id: 4, name: "Binisa Aate Magar", image: "https://via.placeholder.com/130x200" },
-    ];
+  const stories = [
+    { id: 1, name: "Create Story", isCreateStory: true, image: "https://picsum.photos/1900/1200?random=1" },
+    { id: 2, name: "Nicola Tesla", image: "https://picsum.photos/1900/1200?random=2" },
+    { id: 3, name: "Lightborn fanny", image: "https://picsum.photos/1900/1200?random=3" },
+    { id: 4, name: "Ling", image: "https://picsum.photos/1900/1200?random=4" },
+  ];
+  
+  
   
     return (
       <div className="story-container">

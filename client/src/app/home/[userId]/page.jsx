@@ -5,13 +5,16 @@ import Post from "@/components/post";
 export default function HomePage() {
   const posts = [
     {
-      name: "Manita Giri",
+      name: "Albert Einstein",
       time: "December 14 at 9:11 AM",
-      description: "Happy 1st anniversary budu 🌍🤲❤️",
-      images: ["/post1.jpg", "/post2.jpg"],
+      description: "K xa ta sathi haru",
+      images: [
+        "https://picsum.photos/1900/1200?random=1", 
+        "https://picsum.photos/1900/1200?random=2"
+      ],
     },
   ];
-
+  
   return (
     <div className="homepage">
       <PostInput />
