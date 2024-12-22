@@ -78,4 +78,17 @@ const verifyUser = (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyUser };
+const getUsers = async (req, res) => {
+  try {
+    const totalUsers = await userModel.find({}).select("-password");
+    if (totalUsers.length > 0) {
+      console.log("Printing total users", totalUsers);
+      return res.status(202).json({ totalUsers });
+    }
+    return res.status(404).json({ msg: "No users found" });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+module.exports = { register, login, verifyUser, getUsers };
