@@ -3,7 +3,13 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import "../styles/navbar.css";
 import { useAuth } from "@/Context/context";
-import { FaHome, FaUserFriends, FaCog, FaUsers, FaSignOutAlt } from "react-icons/fa"; 
+import {
+  FaHome,
+  FaUserFriends,
+  FaCog,
+  FaUsers,
+  FaSignOutAlt,
+} from "react-icons/fa";
 
 const Navbar = () => {
   const { isValidUser, userId } = useAuth();
@@ -16,7 +22,6 @@ const Navbar = () => {
     <>
       {userId ? (
         <div className="navbar">
-
           <div className="navbar-left">
             <div className="logo">
               <i className="fab fa-facebook"></i> facebook
@@ -24,7 +29,7 @@ const Navbar = () => {
           </div>
 
           <div className="navbar-middle">
-            <Link href="/" className="nav-link">
+            <Link href={`/home/${userId}`} className="nav-link">
               <FaHome size={29} />
             </Link>
             <Link href="/friends" className="nav-link">
