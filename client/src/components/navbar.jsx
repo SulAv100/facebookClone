@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import "../styles/navbar.css";
 import { useAuth } from "@/Context/context";
+import { useRouter } from "next/navigation";
 import {
   FaHome,
   FaUserFriends,
@@ -13,10 +14,32 @@ import {
 
 const Navbar = () => {
   const { isValidUser, userId } = useAuth();
+  const BASE_URL = process.env.NEXT_PUBLIC_API;
+  const router = useRouter();
 
   useEffect(() => {
     isValidUser();
   }, []);
+
+  const logoutUser = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/logoutUser`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        console.log(response.statusText);
+        return;
+      }
+      router.push("/");
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <>
@@ -44,7 +67,7 @@ const Navbar = () => {
           </div>
 
           <div className="navbar-right">
-            <button className="logout-btn">
+            <button onClick={logoutUser} className="logout-btn">
               <FaSignOutAlt size={30} />
             </button>
           </div>

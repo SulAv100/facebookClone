@@ -91,4 +91,18 @@ const getUsers = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyUser, getUsers };
+const logout = async (req, res) => {
+  try {
+    console.log("Aayo hai request");
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
+    return res.status(202).json({ msg: "Successfully logged out " });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+module.exports = { register, login, verifyUser, getUsers, logout };

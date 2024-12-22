@@ -7,5 +7,6 @@ router.route("/signup").post(authController.register);
 router.route("/login").post(authController.login);
 router.route("/verifyUser").get(authMiddleware, authController.verifyUser);
 router.route("/getUsers").get(authController.getUsers);
+router.route("/logoutUser").post(authController.logout);
 
 module.exports = router;
