@@ -1,21 +1,18 @@
 "use client";
 import React, { useEffect, useState } from "react";
-
 import "../../styles/friends.css";
 import { useAuth } from "@/Context/context";
 
 const UserList = () => {
   const BASE_URL = process.env.NEXT_PUBLIC_API;
   const { isValidUser, userId } = useAuth();
-  const [allUsers, setAllUsers] = useState([]);
-  const [requestUser, setRequestUser] = useState([]);
+  const [usersData, setUsersData] = useState({ allUsers: [], requestUser: [] });
 
   useEffect(() => {
     isValidUser();
   }, []);
 
   const getUsers = async () => {
-    let allArray = [];
     try {
       const response = await fetch(`${BASE_URL}/auth/getUsers`, {
         method: "POST",
@@ -29,17 +26,14 @@ const UserList = () => {
         console.log(response.statusText);
         return;
       }
-      console.log(data);
-      setAllUsers(data.finalList);
-      setRequestUser(data.finalRequestList);
+      setUsersData({
+        allUsers: data.finalList,
+        requestUser: data.finalRequestList,
+      });
     } catch (error) {
       console.error(error);
     }
   };
-
-  useEffect(() => {
-    console.log(allUsers);
-  }, [allUsers]);
 
   useEffect(() => {
     if (userId) {
@@ -62,15 +56,19 @@ const UserList = () => {
         },
         body: JSON.stringify({ from: userId, to: to }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         console.log(response.statusText);
         return;
       }
-      window.location.reload();
-      console.log(data);
+      setUsersData((prevState) => ({
+        ...prevState,
+        allUsers: prevState.allUsers.filter((user) => user._id !== to),
+        requestUser: [
+          ...prevState.requestUser,
+          prevState.allUsers.find((user) => user._id === to),
+        ],
+      }));
     } catch (error) {
       console.error(error);
     }
@@ -88,59 +86,68 @@ const UserList = () => {
       const data = await response.json();
       if (!response.ok) {
         console.log(response.statusText);
-
         return;
       }
-      console.log(data);
-      window.location.reload();
+
+      setUsersData((prevState) => ({
+        ...prevState,
+        allUsers: [
+          ...prevState.allUsers,
+          prevState.requestUser.find((user) => user._id === id),
+        ],
+        requestUser: prevState.requestUser.filter((user) => user._id !== id),
+      }));
     } catch (error) {
       console.error(error);
     }
   };
 
+  const UserCard = ({ user, onAction, buttonText, onClick }) => {
+    const newName = getTwoLetter(user.firstName);
+    return (
+      <div className="user-card" key={user._id}>
+        <span className="two-letter">{newName}</span>
+        <div className="user-info">
+          <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
+        </div>
+        <div className="user-actions">
+          <button className="btn-view-profile">View Profile</button>
+          <button
+            onClick={onClick}
+            className={
+              buttonText === "Send Request"
+                ? "btn-send-request"
+                : "btn-cancel-request"
+            }
+          >
+            {buttonText}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="user-list">
-      {allUsers?.map((user, index) => {
-        let newName = getTwoLetter(user.firstName);
-        return (
-          <div className="user-card" key={user._id}>
-            <span className="two-letter">{newName}</span>
-            <div className="user-info">
-              <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
-            </div>
-            <div className="user-actions">
-              <button className="btn-view-profile">View Profile</button>
-              <button
-                onClick={() => sendRequest(user._id)}
-                className="btn-send-request"
-              >
-                Send Request
-              </button>
-            </div>
-          </div>
-        );
-      })}
+      {usersData.allUsers.map((user) => (
+        <UserCard
+          key={user._id}
+          user={user}
+          onAction={sendRequest}
+          buttonText="Send Request"
+          onClick={() => sendRequest(user._id)}
+        />
+      ))}
 
-      {requestUser?.map((user, index) => {
-        let newName = getTwoLetter(user.firstName);
-        return (
-          <div className="user-card" key={user._id}>
-            <span className="two-letter">{newName}</span>
-            <div className="user-info">
-              <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
-            </div>
-            <div className="user-actions">
-              <button className="btn-view-profile">View Profile</button>
-              <button
-                onClick={() => cancelRequest(user._id)}
-                className="btn-cancel-request"
-              >
-                Cancel Request
-              </button>
-            </div>
-          </div>
-        );
-      })}
+      {usersData.requestUser.map((user) => (
+        <UserCard
+          key={user._id}
+          user={user}
+          onAction={cancelRequest}
+          buttonText="Cancel Request"
+          onClick={() => cancelRequest(user._id)}
+        />
+      ))}
     </div>
   );
 };
