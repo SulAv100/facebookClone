@@ -8,12 +8,14 @@ const UserList = () => {
   const BASE_URL = process.env.NEXT_PUBLIC_API;
   const { isValidUser, userId } = useAuth();
   const [allUsers, setAllUsers] = useState([]);
+  const [requestUser, setRequestUser] = useState([]);
 
   useEffect(() => {
     isValidUser();
   }, []);
 
   const getUsers = async () => {
+    let allArray = [];
     try {
       const response = await fetch(`${BASE_URL}/auth/getUsers`, {
         method: "POST",
@@ -28,7 +30,8 @@ const UserList = () => {
         return;
       }
       console.log(data);
-      setAllUsers()
+      setAllUsers(data.finalList);
+      setRequestUser(data.finalRequestList);
     } catch (error) {
       console.error(error);
     }
@@ -66,8 +69,30 @@ const UserList = () => {
         console.log(response.statusText);
         return;
       }
-
+      window.location.reload();
       console.log(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const cancelRequest = async (id) => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/cancelRequest`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        console.log(response.statusText);
+
+        return;
+      }
+      console.log(data);
+      window.location.reload();
     } catch (error) {
       console.error(error);
     }
@@ -90,6 +115,27 @@ const UserList = () => {
                 className="btn-send-request"
               >
                 Send Request
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      {requestUser?.map((user, index) => {
+        let newName = getTwoLetter(user.firstName);
+        return (
+          <div className="user-card" key={user._id}>
+            <span className="two-letter">{newName}</span>
+            <div className="user-info">
+              <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
+            </div>
+            <div className="user-actions">
+              <button className="btn-view-profile">View Profile</button>
+              <button
+                onClick={() => cancelRequest(user._id)}
+                className="btn-cancel-request"
+              >
+                Cancel Request
               </button>
             </div>
           </div>

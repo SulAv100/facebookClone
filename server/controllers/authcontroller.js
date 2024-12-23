@@ -177,4 +177,25 @@ const sendRequest = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyUser, getUsers, logout, sendRequest };
+const cancelRequest = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const isPresent = await requestModel.findOneAndDelete({ to: userId });
+    if (isPresent) {
+      return res.status(201).json({ msg: "Request unsent successfully" });
+    }
+    return res.status(404).json({ msg: "Request wasnt found" });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  verifyUser,
+  getUsers,
+  logout,
+  sendRequest,
+  cancelRequest,
+};
