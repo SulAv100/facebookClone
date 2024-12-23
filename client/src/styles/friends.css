@@ -13,7 +13,9 @@
   border: 1px solid #ddd;
   padding: 20px;
   border-radius: 12px;
-  width: 450px;
+  gap: 10px;
+  max-width: 500px;
+  width: 100%;
   margin-bottom: 15px;
   background-color: #f9f9f9;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -76,4 +78,13 @@
 
 .btn-send-request:hover {
   background-color: #218838;
+}
+.two-letter{
+  padding: 20px;
+  border-radius: 50%;
+  margin-right: 20px;
+  background-color: #0056b3;
+  color: white;
+  font-size: 24px;
+  font-weight: 600
 }

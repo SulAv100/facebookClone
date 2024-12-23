@@ -1,5 +1,7 @@
 const userModel = require("../models/usermodel.js");
+const requestModel = require("../models/requestmodel.js");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 
 const register = async (req, res) => {
   try {
@@ -40,7 +42,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    console.log(req.body);
+    // console.log(req.body);
     const { email, password } = req.body;
     const isPresent = await userModel.findOne({ email: email });
     if (!isPresent) {
@@ -80,12 +82,62 @@ const verifyUser = (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const totalUsers = await userModel.find({}).select("-password");
-    if (totalUsers.length > 0) {
-      console.log("Printing total users", totalUsers);
-      return res.status(202).json({ totalUsers });
+    let finalList = [];
+    const { userId } = req.body;
+    const getRequestUsers = await requestModel.aggregate([
+      {
+        $match: {
+          from: { $eq: new mongoose.Types.ObjectId(userId) },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "to",
+          foreignField: "_id",
+          as: "requestUsers",
+        },
+      },
+      {
+        $project: {
+          "requestUsers.password": 0,
+          "requestUsers.email": 0,
+          "requestUsers.date": 0,
+          "requestUsers.gender": 0,
+          "requestUsers.friends": 0,
+        },
+      },
+      {
+        $unwind: "$requestUsers",
+      },
+      {
+        $addFields: {
+          "requestUsers.status": "$status",
+        },
+      },
+    ]);
+
+    console.log("Process haneko yo ho hai tra", getRequestUsers);
+
+    const allUsers = await userModel
+      .find({
+        _id: { $ne: new mongoose.Types.ObjectId(userId) },
+      })
+      .select("-password -friends -date -gender -email");
+
+    const requestRecieved = getRequestUsers.map((req) => req.to.toString());
+    console.log("The users who recieved the request are ", requestRecieved);
+
+    finalList = allUsers.filter(
+      (user) => !requestRecieved.includes(user._id.toString())
+    );
+
+    const finalRequestList = getRequestUsers.map((item) => item.requestUsers);
+
+    if (finalList && finalRequestList) {
+      return res.status(201).json({ finalList, finalRequestList });
     }
-    return res.status(404).json({ msg: "No users found" });
+    return res.status(404).json({ msg: "No data found" });
   } catch (error) {
     console.error(error);
   }
@@ -105,4 +157,24 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyUser, getUsers, logout };
+const sendRequest = async (req, res) => {
+  try {
+    const { from, to } = req.body;
+    const findRequest = await requestModel.findOne({ from, to });
+    if (findRequest) {
+      console.log("Already send an request");
+
+      return;
+    }
+    const newRequest = new requestModel({
+      from: from,
+      to: to,
+    });
+    await newRequest.save();
+    return res.status(201).json({ msg: "Successfully sent the request" });
+  } catch (error) {
+    return res.status(505).json({ msg: "Internal server error occured" });
+  }
+};
+
+module.exports = { register, login, verifyUser, getUsers, logout, sendRequest };

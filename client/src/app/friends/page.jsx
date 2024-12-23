@@ -16,9 +16,11 @@ const UserList = () => {
   const getUsers = async () => {
     try {
       const response = await fetch(`${BASE_URL}/auth/getUsers`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ userId: userId }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -26,8 +28,7 @@ const UserList = () => {
         return;
       }
       console.log(data);
-      const usersProfile = data.totalUsers.filter((item) => item._id !== userId);
-      setAllUsers(usersProfile);
+      setAllUsers()
     } catch (error) {
       console.error(error);
     }
@@ -42,45 +43,58 @@ const UserList = () => {
       getUsers();
     }
   }, [userId]);
-  const users = [
-    {
-      id: 1,
-      firstName: "John",
-      lastName: "Doe",
-      image: "https://picsum.photos/1900/1200?random=1",
-    },
-    {
-      id: 2,
-      firstName: "Jane",
-      lastName: "Smith",
-      image: "https://picsum.photos/1900/1200?random=2",
-    },
-    {
-      id: 3,
-      firstName: "Alice",
-      lastName: "Johnson",
-      image: "https://picsum.photos/1900/1200?random=4",
-    },
-  ];
+
+  const getTwoLetter = (name) => {
+    const seperatedName = name.split("");
+    const joinName = seperatedName.slice(0, 2).join("");
+    return joinName;
+  };
+
+  const sendRequest = async (to) => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/sendRequest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ from: userId, to: to }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log(response.statusText);
+        return;
+      }
+
+      console.log(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <div className="user-list">
-      {users.map((user) => (
-        <div className="user-card" key={user.id}>
-          <img
-            className="profile-pic"
-            src={user.image}
-            alt={`${user.firstName} ${user.lastName}`}
-          />
-          <div className="user-info">
-            <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
+      {allUsers?.map((user, index) => {
+        let newName = getTwoLetter(user.firstName);
+        return (
+          <div className="user-card" key={user._id}>
+            <span className="two-letter">{newName}</span>
+            <div className="user-info">
+              <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
+            </div>
+            <div className="user-actions">
+              <button className="btn-view-profile">View Profile</button>
+              <button
+                onClick={() => sendRequest(user._id)}
+                className="btn-send-request"
+              >
+                Send Request
+              </button>
+            </div>
           </div>
-          <div className="user-actions">
-            <button className="btn-view-profile">View Profile</button>
-            <button className="btn-send-request">Send Request</button>
-          </div>{" "}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
