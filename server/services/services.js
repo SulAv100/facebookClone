@@ -10,7 +10,7 @@ const aafuBayek = async (userId) => {
     .select("-password -email -friends -gender -date");
 };
 
-const aafulePathayeko = async (userId) => {
+const kaslaiPathako = async (userId) => {
   return await requestModel.aggregate([
     {
       $match: {
@@ -20,7 +20,7 @@ const aafulePathayeko = async (userId) => {
     {
       $lookup: {
         from: "users",
-        localField: "from",
+        localField: "to",
         foreignField: "_id",
         as: "pathakoRequest",
       },
@@ -45,4 +45,39 @@ const aafulePathayeko = async (userId) => {
   ]);
 };
 
-module.exports = { aafuBayek, aafulePathayeko };
+const kaslePathako = async (kasle) => {
+  return await requestModel.aggregate([
+    {
+      $match: {
+        to: { $eq: new mongoose.Types.ObjectId(kasle) },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "from",
+        foreignField: "_id",
+        as: "yeslePathako",
+      },
+    },
+    {
+      $project: {
+        "yeslePathako.password": 0,
+        "yeslePathako.email": 0,
+        "yeslePathako.friends": 0,
+        "yeslePathako.date": 0,
+        "yeslePathako.gender": 0,
+      },
+    },
+    {
+      $unwind: "$yeslePathako",
+    },
+    {
+      $addFields: {
+        "yeslePathako.status": "$status",
+      },
+    },
+  ]);
+};
+
+module.exports = { aafuBayek, kaslaiPathako, kaslePathako };

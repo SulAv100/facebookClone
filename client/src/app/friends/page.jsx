@@ -7,8 +7,11 @@ import { io } from "socket.io-client";
 const UserList = () => {
   const BASE_URL = process.env.NEXT_PUBLIC_API;
   const { isValidUser, userId } = useAuth();
-  const [usersData, setUsersData] = useState({ allUsers: [], requestUser: [] });
-  const [recievedReq, setRecievedReq] = useState([]);
+  const [usersData, setUsersData] = useState({
+    allUsers: [],
+    requestUser: [],
+    recievedReq: [],
+  });
   const [socket, setSocket] = useState();
 
   useEffect(() => {
@@ -30,6 +33,24 @@ const UserList = () => {
       });
     });
 
+    // request recieve garteko data
+
+    socketInstance.on("requestAayo", ({ filterWhoSend }) => {
+      console.log("Talai bharkhar yesle request pathayuo hai", filterWhoSend);
+
+      if (Array.isArray(filterWhoSend) && filterWhoSend.length > 0) {
+        setUsersData((prevState) => ({
+          ...prevState,
+          allUsers: prevState.allUsers.filter(
+            (user) => user._id !== filterWhoSend[0]._id
+          ),
+          recievedReq: prevState.allUsers.filter(
+            (user) => user._id === filterWhoSend[0]._id
+          ),
+        }));
+      }
+    });
+
     return () => {
       socketInstance.disconnect();
     };
@@ -39,11 +60,14 @@ const UserList = () => {
     if (userId && socket) {
       socket.emit("register", { userId });
       socket.emit("getUserList", { userId });
-      // socket.emit("getRequestSentList", { userId });
+      setTimeout(()=>{
+        socket.emit("requestHaru", { userId });
+      },10)
     }
   }, [userId, socket]);
 
   const getTwoLetter = (name) => {
+    if (!name) return "";
     const seperatedName = name.split("");
     const joinName = seperatedName.slice(0, 2).join("");
     return joinName;
@@ -54,11 +78,19 @@ const UserList = () => {
     console.log(`${userId} sent request to ${to}`);
   };
 
+  const acceptRequest = (id) => {
+    console.log("Accepted hane hai ta kta hio");
+  };
+
   const buttonClasses = {
     "Send Request": "btn-send-request",
     "Accept Request": "btn-acc-request",
     "Cancel Request": "btn-cancel-request",
   };
+
+  useEffect(() => {
+    console.log(usersData);
+  }, [usersData]);
 
   const UserCard = ({ user, onAction, buttonText, onClick }) => {
     const newName = getTwoLetter(user.firstName);
@@ -85,25 +117,27 @@ const UserList = () => {
 
   return (
     <div className="user-list">
-      {/* {recievedReq?.map((user, index) => (
-        <UserCard
-          key={index}
-          user={user}
-          onAction={acceptRequest}
-          buttonText="Accept Request"
-          onClick={() => acceptRequest(user._id)}
-        />
-      ))} */}
+      {usersData.recievedReq?.length > 0 &&
+        usersData.recievedReq.map((user) => (
+          <UserCard
+            key={user._id}
+            user={user}
+            onAction={acceptRequest}
+            buttonText="Accept Request"
+            onClick={() => acceptRequest(user._id)}
+          />
+        ))}
 
-      {usersData.allUsers.map((user) => (
-        <UserCard
-          key={user._id}
-          user={user}
-          onAction={sendRequest}
-          buttonText="Send Request"
-          onClick={() => sendRequest(user._id)}
-        />
-      ))}
+      {usersData.allUsers?.length > 0 &&
+        usersData.allUsers.map((user) => (
+          <UserCard
+            key={user._id}
+            user={user}
+            onAction={sendRequest}
+            buttonText="Send Request"
+            onClick={() => sendRequest(user._id)}
+          />
+        ))}
 
       {/* {usersData.requestUser.map((user) => (
         <UserCard

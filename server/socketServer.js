@@ -2,7 +2,11 @@ const { Server } = require("socket.io");
 const userModel = require("./models/usermodel.js");
 const requestModel = require("./models/requestmodel.js");
 const mongoose = require("mongoose");
-const { aafuBayek, aafulePathayeko } = require("./services/services.js");
+const {
+  aafuBayek,
+  kaslaiPathako,
+  kaslePathako,
+} = require("./services/services.js");
 
 const initSocketServer = (server) => {
   const io = new Server(server, {
@@ -44,10 +48,33 @@ const initSocketServer = (server) => {
         });
         await newRequest.save();
         console.log("The request has been sent successful");
+
+        const whomSend = await kaslaiPathako(from);
+        const whoSend = await kaslePathako(to);
+        console.log("Yeslai pathako hai ta", whomSend);
+        console.log("Yesle pathako hai ta ", whoSend);
+
+        const filterWhoSend = whoSend.map((item) => item.yeslePathako);
+
+        if (userSockets[to]) {
+          io.to(userSockets[to]).emit("requestAayo", { filterWhoSend });
+        }
       } else {
         console.log(
           "This request is already present in the db no need to send againb"
         );
+      }
+    });
+
+    socket.on("requestHaru", async ({ userId }) => {
+      console.log(`User with id ${userId} is trying to get all requests`);
+      const whoSend = await kaslePathako(userId);
+
+      const filterWhoSend = whoSend.map((item) => item.yeslePathako);
+      console.log("YO seperate hio hai", filterWhoSend);
+
+      if (userSockets[userId]) {
+        io.to(userSockets[userId]).emit("requestAayo", { filterWhoSend });
       }
     });
 
