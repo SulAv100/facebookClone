@@ -2,45 +2,46 @@
 import React, { useEffect, useState } from "react";
 import "../../styles/friends.css";
 import { useAuth } from "@/Context/context";
+import { io } from "socket.io-client";
 
 const UserList = () => {
   const BASE_URL = process.env.NEXT_PUBLIC_API;
   const { isValidUser, userId } = useAuth();
   const [usersData, setUsersData] = useState({ allUsers: [], requestUser: [] });
   const [recievedReq, setRecievedReq] = useState([]);
+  const [socket, setSocket] = useState();
 
   useEffect(() => {
     isValidUser();
   }, []);
 
-  const getUsers = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/auth/getUsers`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId: userId }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        console.log(response.statusText);
-        return;
-      }
+  useEffect(() => {
+    const socketInstance = io("http://localhost:5173", {
+      transports: ["websocket"],
+    });
+
+    setSocket(socketInstance);
+
+    // aafu vaytek aaru user haru tanne
+    socketInstance.on("aaruUser", ({ aafuBayekUser }) => {
+      console.log("Aaru user haru yei ho hai ta", aafuBayekUser);
       setUsersData({
-        allUsers: data.finalList,
-        requestUser: data.finalRequestList,
+        allUsers: aafuBayekUser,
       });
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    });
+
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
-    if (userId) {
-      getUsers();
+    if (userId && socket) {
+      socket.emit("register", { userId });
+      socket.emit("getUserList", { userId });
+      // socket.emit("getRequestSentList", { userId });
     }
-  }, [userId]);
+  }, [userId, socket]);
 
   const getTwoLetter = (name) => {
     const seperatedName = name.split("");
@@ -48,95 +49,10 @@ const UserList = () => {
     return joinName;
   };
 
-  const sendRequest = async (to) => {
-    try {
-      const response = await fetch(`${BASE_URL}/auth/sendRequest`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ from: userId, to: to }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        console.log(response.statusText);
-        return;
-      }
-      setUsersData((prevState) => ({
-        ...prevState,
-        allUsers: prevState.allUsers.filter((user) => user._id !== to),
-        requestUser: [
-          ...prevState.requestUser,
-          prevState.allUsers.find((user) => user._id === to),
-        ],
-      }));
-    } catch (error) {
-      console.error(error);
-    }
+  const sendRequest = (to) => {
+    socket.emit("sendRequest", { from: userId, to: to });
+    console.log(`${userId} sent request to ${to}`);
   };
-
-  const cancelRequest = async (id) => {
-    try {
-      const response = await fetch(`${BASE_URL}/auth/cancelRequest`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId: id }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        console.log(response.statusText);
-        return;
-      }
-
-      setUsersData((prevState) => ({
-        ...prevState,
-        allUsers: [
-          ...prevState.allUsers,
-          prevState.requestUser.find((user) => user._id === id),
-        ],
-        requestUser: prevState.requestUser.filter((user) => user._id !== id),
-      }));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const getFriendRequest = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/auth/getFriends`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        console.log(response.statusText);
-        return;
-      }
-      console.log(data[0]);
-      setRecievedReq(data[0]);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  useEffect(() => {
-    if (userId) {
-      getFriendRequest();
-    }
-  }, [userId]);
-
-  const acceptRequest = async (id) => {
-    console.log("Yo id ko request accept hande", id);
-  };
-
-  useEffect(() => {
-    console.log("Yo  ho hai ta payeko ta", recievedReq);
-  }, [recievedReq]);
 
   const buttonClasses = {
     "Send Request": "btn-send-request",
@@ -169,7 +85,7 @@ const UserList = () => {
 
   return (
     <div className="user-list">
-      {recievedReq?.map((user, index) => (
+      {/* {recievedReq?.map((user, index) => (
         <UserCard
           key={index}
           user={user}
@@ -177,7 +93,7 @@ const UserList = () => {
           buttonText="Accept Request"
           onClick={() => acceptRequest(user._id)}
         />
-      ))}
+      ))} */}
 
       {usersData.allUsers.map((user) => (
         <UserCard
@@ -189,7 +105,7 @@ const UserList = () => {
         />
       ))}
 
-      {usersData.requestUser.map((user) => (
+      {/* {usersData.requestUser.map((user) => (
         <UserCard
           key={user._id}
           user={user}
@@ -197,7 +113,7 @@ const UserList = () => {
           buttonText="Cancel Request"
           onClick={() => cancelRequest(user._id)}
         />
-      ))}
+      ))} */}
     </div>
   );
 };

@@ -3,11 +3,16 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const authRoute = require("./router/authrouter.js")
+const authRoute = require("./router/authrouter.js");
+const http = require("http");
+// const socketIo = require("socket.io");
 
 dotenv.config();
 
 const app = express();
+
+const server = http.createServer(app);
+// const io = socketIo(server);
 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -23,7 +28,7 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-app.use("/api/auth",authRoute);
+app.use("/api/auth", authRoute);
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -38,6 +43,11 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5173;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`The server is running at port ${PORT}`);
 });
+
+const { initSocketServer } = require("./socketServer");
+initSocketServer(server);
+
+module.exports = { app, server };
