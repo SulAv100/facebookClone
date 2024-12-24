@@ -7,6 +7,7 @@ const UserList = () => {
   const BASE_URL = process.env.NEXT_PUBLIC_API;
   const { isValidUser, userId } = useAuth();
   const [usersData, setUsersData] = useState({ allUsers: [], requestUser: [] });
+  const [recievedReq, setRecievedReq] = useState([]);
 
   useEffect(() => {
     isValidUser();
@@ -102,33 +103,82 @@ const UserList = () => {
     }
   };
 
+  const getFriendRequest = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/getFriends`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        console.log(response.statusText);
+        return;
+      }
+      console.log(data[0]);
+      setRecievedReq(data[0]);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      getFriendRequest();
+    }
+  }, [userId]);
+
+  const acceptRequest = async (id) => {
+    console.log("Yo id ko request accept hande", id);
+  };
+
+  useEffect(() => {
+    console.log("Yo  ho hai ta payeko ta", recievedReq);
+  }, [recievedReq]);
+
+  const buttonClasses = {
+    "Send Request": "btn-send-request",
+    "Accept Request": "btn-acc-request",
+    "Cancel Request": "btn-cancel-request",
+  };
+
   const UserCard = ({ user, onAction, buttonText, onClick }) => {
     const newName = getTwoLetter(user.firstName);
     return (
-      <div className="user-card" key={user._id}>
-        <span className="two-letter">{newName}</span>
-        <div className="user-info">
-          <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
+      <>
+        <div className="user-card" key={user._id}>
+          <span className="two-letter">{newName}</span>
+          <div className="user-info">
+            <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
+          </div>
+          <div className="user-actions">
+            <button className="btn-view-profile">View Profile</button>
+            <button
+              onClick={onClick}
+              className={buttonClasses[buttonText] || "btn-default"}
+            >
+              {buttonText}
+            </button>
+          </div>
         </div>
-        <div className="user-actions">
-          <button className="btn-view-profile">View Profile</button>
-          <button
-            onClick={onClick}
-            className={
-              buttonText === "Send Request"
-                ? "btn-send-request"
-                : "btn-cancel-request"
-            }
-          >
-            {buttonText}
-          </button>
-        </div>
-      </div>
+      </>
     );
   };
 
   return (
     <div className="user-list">
+      {recievedReq?.map((user, index) => (
+        <UserCard
+          key={index}
+          user={user}
+          onAction={acceptRequest}
+          buttonText="Accept Request"
+          onClick={() => acceptRequest(user._id)}
+        />
+      ))}
+
       {usersData.allUsers.map((user) => (
         <UserCard
           key={user._id}

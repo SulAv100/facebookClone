@@ -117,7 +117,7 @@ const getUsers = async (req, res) => {
       },
     ]);
 
-    console.log("Process haneko yo ho hai tra", getRequestUsers);
+    // console.log("Process haneko yo ho hai tra", getRequestUsers);
 
     const allUsers = await userModel
       .find({
@@ -126,7 +126,7 @@ const getUsers = async (req, res) => {
       .select("-password -friends -date -gender -email");
 
     const requestRecieved = getRequestUsers.map((req) => req.to.toString());
-    console.log("The users who recieved the request are ", requestRecieved);
+    // console.log("The users who recieved the request are ", requestRecieved);
 
     finalList = allUsers.filter(
       (user) => !requestRecieved.includes(user._id.toString())
@@ -190,6 +190,51 @@ const cancelRequest = async (req, res) => {
   }
 };
 
+const getFriends = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const availableRequest = await requestModel.find({ to: userId });
+
+    const present = await requestModel.aggregate([
+      {
+        $match: {
+          to: { $eq: new mongoose.Types.ObjectId(userId) },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "to",
+          foreignField: "_id",
+          as: "userData",
+        },
+      },
+      {
+        $project: {
+          "userData.password": 0,
+          "userData.email": 0,
+          "userData.gender": 0,
+          "userData.friends": 0,
+          "userData.date": 0,
+        },
+      },
+    ]);
+
+    // console.log("Yo ho hai payeko haru ta", present);
+
+    const requestSender = present.map((user) => user.userData);
+    console.log("Final yo ho hai ta", requestSender);
+
+    if (requestSender.length < 1) {
+      return res.status(401).json({ msg: "No requests available right now" });
+    }
+
+    return res.status(202).json(requestSender);
+  } catch (error) {
+    return res.status(505).json({ msg: "Server error occured" });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -198,4 +243,5 @@ module.exports = {
   logout,
   sendRequest,
   cancelRequest,
+  getFriends,
 };

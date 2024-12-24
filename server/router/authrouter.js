@@ -10,6 +10,7 @@ router.route("/getUsers").post(authController.getUsers);
 router.route("/logoutUser").post(authController.logout);
 router.route("/sendRequest").post(authController.sendRequest);
 router.route("/cancelRequest").delete(authController.cancelRequest);
+router.route("/getFriends").post(authController.getFriends);
 
 
 module.exports = router;
