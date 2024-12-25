@@ -78,6 +78,18 @@ const initSocketServer = (server) => {
       }
     });
 
+    socket.on("sendHanekoRequest", async ({ userId }) => {
+      console.log(`User with id ${userId} is trying to fetch all the request`);
+
+      const pathakoRequest = await kaslaiPathako(userId);
+      const pathakoFilter = pathakoRequest.map((user) => user.pathakoRequest);
+      console.log("Yesle pathaklo data haru yei ho hai ta", pathakoFilter);
+
+      if (userSockets[userId]) {
+        io.to(userSockets[userId]).emit("tailePathako", { pathakoFilter });
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("An user just disconnected");
       for (let userId in userSockets) {

@@ -30,6 +30,8 @@ const UserList = () => {
       console.log("Aaru user haru yei ho hai ta", aafuBayekUser);
       setUsersData({
         allUsers: aafuBayekUser,
+        recievedReq: [],
+        requestUser: [],
       });
     });
 
@@ -47,6 +49,21 @@ const UserList = () => {
           recievedReq: prevState.allUsers.filter(
             (user) => user._id === filterWhoSend[0]._id
           ),
+          requestUser: prevState.requestUser || [],
+        }));
+      }
+    });
+
+    socketInstance.on("tailePathako", ({ pathakoFilter }) => {
+      console.log("Taile pathako request haru yeha xa  hai", pathakoFilter);
+      const pathakoIdharu = pathakoFilter.map((user) => user._id);
+      if (Array.isArray(pathakoFilter) && pathakoFilter.length > 0) {
+        setUsersData((prevState) => ({
+          allUsers: prevState.allUsers.filter(
+            (user) => !pathakoIdharu.includes(user._id)
+          ),
+          recievedReq: prevState.recievedReq || [],
+          requestUser: [...pathakoFilter],
         }));
       }
     });
@@ -60,9 +77,10 @@ const UserList = () => {
     if (userId && socket) {
       socket.emit("register", { userId });
       socket.emit("getUserList", { userId });
-      setTimeout(()=>{
+      setTimeout(() => {
         socket.emit("requestHaru", { userId });
-      },10)
+      }, 10);
+      socket.emit("sendHanekoRequest", { userId });
     }
   }, [userId, socket]);
 
@@ -76,10 +94,32 @@ const UserList = () => {
   const sendRequest = (to) => {
     socket.emit("sendRequest", { from: userId, to: to });
     console.log(`${userId} sent request to ${to}`);
+
+    setUsersData((prevState) => {
+      const targetUser = prevState.allUsers.filter((user) => user._id === to);
+
+      if (!targetUser) {
+        return prevState;
+      }
+
+      return {
+        allUsers: prevState.allUsers.filter((user) => user._id !== to),
+        recievedReq: prevState.recievedReq,
+        requestUser: [...prevState.requestUser, ...targetUser],
+      };
+    });
   };
+
+  useEffect(() => {
+    console.log(usersData);
+  }, [usersData]);
 
   const acceptRequest = (id) => {
     console.log("Accepted hane hai ta kta hio");
+  };
+
+  const cancelRequest = (id) => {
+    console.log("Cancelling the requst of id", id);
   };
 
   const buttonClasses = {
@@ -139,15 +179,16 @@ const UserList = () => {
           />
         ))}
 
-      {/* {usersData.requestUser.map((user) => (
-        <UserCard
-          key={user._id}
-          user={user}
-          onAction={cancelRequest}
-          buttonText="Cancel Request"
-          onClick={() => cancelRequest(user._id)}
-        />
-      ))} */}
+      {usersData.requestUser?.length > 0 &&
+        usersData.requestUser.map((user) => (
+          <UserCard
+            key={user._id}
+            user={user}
+            onAction={cancelRequest}
+            buttonText="Cancel Request"
+            onClick={() => cancelRequest(user._id)}
+          />
+        ))}
     </div>
   );
 };
