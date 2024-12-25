@@ -51,6 +51,8 @@ const UserList = () => {
           ),
           requestUser: prevState.requestUser || [],
         }));
+      } else {
+        console.log("Lol kei aako xaina");
       }
     });
 
@@ -66,6 +68,17 @@ const UserList = () => {
           requestUser: [...pathakoFilter],
         }));
       }
+    });
+
+    socketInstance.on("cancelHanyo", ({ filterHaneko }) => {
+      console.log("AAyeko data", filterHaneko);
+      setUsersData((prevState) => ({
+        allUsers: [...prevState.allUsers, ...filterHaneko],
+        recievedReq: prevState.recievedReq.filter(
+          (user) => user._id !== filterHaneko[0]._id
+        ),
+        requestUser: prevState.requestUser,
+      }));
     });
 
     return () => {
@@ -119,7 +132,20 @@ const UserList = () => {
   };
 
   const cancelRequest = (id) => {
-    console.log("Cancelling the requst of id", id);
+    // console.log(`${userId} is trying to cancel the request of ${id}`);
+    setUsersData((prevState) => {
+      const targetUser = prevState.requestUser.filter(
+        (user) => user._id === id
+      );
+      console.log("Yo ho hai ta target user", targetUser);
+
+      return {
+        allUsers: [...prevState.allUsers, ...targetUser],
+        recievedReq: prevState.recievedReq,
+        requestUser: prevState.requestUser.filter((user) => user._id !== id),
+      };
+    });
+    socket.emit("cancelRequest", { kasle: userId, kasko: id });
   };
 
   const buttonClasses = {

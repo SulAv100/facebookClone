@@ -18,13 +18,13 @@ const initSocketServer = (server) => {
   const userSockets = {};
 
   io.on("connection", (socket) => {
-    console.log("An user connected with id", socket.id);
+    // console.log("An user connected with id", socket.id);
 
     socket.on("register", ({ userId }) => {
       console.log(`User with id ${userId} is trying to connect to the server`);
       userSockets[userId] = socket.id;
 
-      console.log("The list of users are", userSockets);
+      // console.log("The list of users are", userSockets);
     });
 
     socket.on("getUserList", async ({ userId }) => {
@@ -36,23 +36,18 @@ const initSocketServer = (server) => {
     });
 
     socket.on("sendRequest", async ({ from, to }) => {
-      console.log(`User ${from} is trying to be friend with user ${to}`);
+      // console.log(`User ${from} is trying to be friend with user ${to}`);
       const isPresent = await requestModel.find({ from: from, to: to });
       if (isPresent.length < 1) {
-        console.log(
-          "There is no such request adding this request please wait "
-        );
         const newRequest = new requestModel({
           from: from,
           to: to,
         });
         await newRequest.save();
-        console.log("The request has been sent successful");
+        // console.log("The request has been sent successful");
 
         const whomSend = await kaslaiPathako(from);
         const whoSend = await kaslePathako(to);
-        console.log("Yeslai pathako hai ta", whomSend);
-        console.log("Yesle pathako hai ta ", whoSend);
 
         const filterWhoSend = whoSend.map((item) => item.yeslePathako);
 
@@ -60,18 +55,13 @@ const initSocketServer = (server) => {
           io.to(userSockets[to]).emit("requestAayo", { filterWhoSend });
         }
       } else {
-        console.log(
-          "This request is already present in the db no need to send againb"
-        );
       }
     });
 
     socket.on("requestHaru", async ({ userId }) => {
-      console.log(`User with id ${userId} is trying to get all requests`);
       const whoSend = await kaslePathako(userId);
 
       const filterWhoSend = whoSend.map((item) => item.yeslePathako);
-      console.log("YO seperate hio hai", filterWhoSend);
 
       if (userSockets[userId]) {
         io.to(userSockets[userId]).emit("requestAayo", { filterWhoSend });
@@ -79,14 +69,28 @@ const initSocketServer = (server) => {
     });
 
     socket.on("sendHanekoRequest", async ({ userId }) => {
-      console.log(`User with id ${userId} is trying to fetch all the request`);
-
       const pathakoRequest = await kaslaiPathako(userId);
       const pathakoFilter = pathakoRequest.map((user) => user.pathakoRequest);
-      console.log("Yesle pathaklo data haru yei ho hai ta", pathakoFilter);
 
       if (userSockets[userId]) {
         io.to(userSockets[userId]).emit("tailePathako", { pathakoFilter });
+      }
+    });
+
+    socket.on("cancelRequest", async ({ kasle, kasko }) => {
+      console.log(`${kasle} is tryin to cancel the reqyst to ${kasko}`);
+      const kasleHaneko = await kaslePathako(kasko);
+      const filterHaneko = kasleHaneko.map((item) => item.yeslePathako);
+      const isPresent = await requestModel.findOneAndDelete({
+        from: kasle,
+        to: kasko,
+      });
+
+      // console.log("Yesle ho hai cancel haneko", filterHaneko);
+
+      // const filterWhoSend = [];
+      if (userSockets[kasko]) {
+        io.to(userSockets[kasko]).emit("cancelHanyo", { filterHaneko });
       }
     });
 
