@@ -81,6 +81,23 @@ const UserList = () => {
       }));
     });
 
+    socketInstance.on("acceptvayo", ({ kasle, kasko }) => {
+      console.log(
+        `${kasle} yesle chain ${kasko} yesko request accept hanexa ni yar`
+      );
+      const totalIds = [kasle, kasko];
+
+      setUsersData((prevState) => ({
+        allUsers: prevState.allUsers,
+        recievedReq: prevState.recievedReq.filter(
+          (user) => !totalIds.includes(user._id)
+        ),
+        requestUser: prevState.requestUser.filter(
+          (user) => !totalIds.includes(user._id)
+        ),
+      }));
+    });
+
     return () => {
       socketInstance.disconnect();
     };
@@ -129,6 +146,7 @@ const UserList = () => {
 
   const acceptRequest = (id) => {
     console.log("Accepted hane hai ta kta hio");
+    socket.emit("requestAcceptHanyo", { kasle: userId, kasko: id });
   };
 
   const cancelRequest = (id) => {

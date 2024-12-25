@@ -80,4 +80,22 @@ const kaslePathako = async (kasle) => {
   ]);
 };
 
-module.exports = { aafuBayek, kaslaiPathako, kaslePathako };
+const friendAdder = async (user1, user2) => {
+  try {
+    const addUser = await userModel.findByIdAndUpdate(
+      { _id: user1 },
+      { $push: { friends: user2 } },
+      { new: true }
+    );
+
+    if (addUser) {
+      return "Successful";
+    } else {
+      return "Failed";
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+module.exports = { aafuBayek, kaslaiPathako, kaslePathako, friendAdder };

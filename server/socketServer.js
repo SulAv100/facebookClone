@@ -6,6 +6,7 @@ const {
   aafuBayek,
   kaslaiPathako,
   kaslePathako,
+  friendAdder,
 } = require("./services/services.js");
 
 const initSocketServer = (server) => {
@@ -78,7 +79,7 @@ const initSocketServer = (server) => {
     });
 
     socket.on("cancelRequest", async ({ kasle, kasko }) => {
-      console.log(`${kasle} is tryin to cancel the reqyst to ${kasko}`);
+      // console.log(`${kasle} is tryin to cancel the reqyst to ${kasko}`);
       const kasleHaneko = await kaslePathako(kasko);
       const filterHaneko = kasleHaneko.map((item) => item.yeslePathako);
       const isPresent = await requestModel.findOneAndDelete({
@@ -92,6 +93,30 @@ const initSocketServer = (server) => {
       if (userSockets[kasko]) {
         io.to(userSockets[kasko]).emit("cancelHanyo", { filterHaneko });
       }
+    });
+
+    socket.on("requestAcceptHanyo", async ({ kasle, kasko }) => {
+      console.log(`User with id ${kasle} accepted the request of ${kasko}`);
+
+      const result = await friendAdder(kasle, kasko);
+      const result2 = await friendAdder(kasko, kasle);
+
+      console.log(result, "Yo ra aakro result chai yo ho hia", result2);
+
+      const deleteRequest = await requestModel.findOneAndDelete({
+        from: kasko,
+        to: kasle,
+      });
+
+      const userIds = [kasle, kasko];
+
+      userIds.forEach((userId) => {
+        if (userSockets[userId]) {
+          io.to(userSockets[userId]).emit("acceptvayo", { kasle, kasko });
+        }
+      });
+
+      // console.log(userAdd);
     });
 
     socket.on("disconnect", () => {
