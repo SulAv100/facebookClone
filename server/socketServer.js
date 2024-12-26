@@ -7,6 +7,7 @@ const {
   kaslaiPathako,
   kaslePathako,
   friendAdder,
+  friendKoXa,
 } = require("./services/services.js");
 
 const initSocketServer = (server) => {
@@ -22,14 +23,22 @@ const initSocketServer = (server) => {
     // console.log("An user connected with id", socket.id);
 
     socket.on("register", ({ userId }) => {
-      console.log(`User with id ${userId} is trying to connect to the server`);
+      // console.log(`User with id ${userId} is trying to connect to the server`);
       userSockets[userId] = socket.id;
 
       // console.log("The list of users are", userSockets);
     });
 
     socket.on("getUserList", async ({ userId }) => {
-      const aafuBayekUser = await aafuBayek(userId);
+      const normmalData = await aafuBayek(userId);
+      const yeskoSathiHaru = await friendKoXa(userId);
+      const idMatra = yeskoSathiHaru.friends;
+
+      // console.log("Yei ho hai ta friends ko id", idMatra);
+
+      const aafuBayekUser = normmalData.filter(
+        (user) => !idMatra.includes(user._id)
+      );
       console.log(aafuBayekUser);
       if (userSockets[userId]) {
         io.to(userSockets[userId]).emit("aaruUser", { aafuBayekUser });
@@ -96,17 +105,21 @@ const initSocketServer = (server) => {
     });
 
     socket.on("requestAcceptHanyo", async ({ kasle, kasko }) => {
-      console.log(`User with id ${kasle} accepted the request of ${kasko}`);
+      // console.log(`User with id ${kasle} accepted the request of ${kasko}`);
 
       const result = await friendAdder(kasle, kasko);
       const result2 = await friendAdder(kasko, kasle);
 
-      console.log(result, "Yo ra aakro result chai yo ho hia", result2);
+      // console.log(result, "Yo ra aakro result chai yo ho hia", result2);
+
+      const aayekoRequest = await userModel.findOne({ userId: kasle });
 
       const deleteRequest = await requestModel.findOneAndDelete({
         from: kasko,
         to: kasle,
       });
+
+      // console.log(`${kasko} pathako yesle ho hai ta ${kasle}`);
 
       const userIds = [kasle, kasko];
 

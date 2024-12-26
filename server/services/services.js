@@ -98,4 +98,25 @@ const friendAdder = async (user1, user2) => {
   }
 };
 
-module.exports = { aafuBayek, kaslaiPathako, kaslePathako, friendAdder };
+const friendKoXa = async (userId) => {
+  try {
+    const yeskoFriends = await userModel.findOne(
+      { _id: userId },
+      { friends: 1, _id: 0 }
+    );        
+    
+    return yeskoFriends;
+    // console.log(typeof yeskoFriends);
+    console.log(yeskoFriends);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+module.exports = {
+  aafuBayek,
+  kaslaiPathako,
+  kaslePathako,
+  friendAdder,
+  friendKoXa,
+};

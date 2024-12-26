@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "../../styles/friends.css";
 import { useAuth } from "@/Context/context";
 import { io } from "socket.io-client";
@@ -12,7 +12,7 @@ const UserList = () => {
     requestUser: [],
     recievedReq: [],
   });
-  const [socket, setSocket] = useState();
+  const socketRef = useRef();
 
   useEffect(() => {
     isValidUser();
@@ -23,79 +23,78 @@ const UserList = () => {
       transports: ["websocket"],
     });
 
-    setSocket(socketInstance);
+    socketRef.current = socketInstance;
 
-    // aafu vaytek aaru user haru tanne
     socketInstance.on("aaruUser", ({ aafuBayekUser }) => {
-      console.log("Aaru user haru yei ho hai ta", aafuBayekUser);
-      setUsersData({
+      setUsersData((prevState) => ({
+        ...prevState,
         allUsers: aafuBayekUser,
         recievedReq: [],
         requestUser: [],
-      });
+      }));
     });
 
-    // request recieve garteko data
-
     socketInstance.on("requestAayo", ({ filterWhoSend }) => {
-      console.log("Talai bharkhar yesle request pathayuo hai", filterWhoSend);
-
       if (Array.isArray(filterWhoSend) && filterWhoSend.length > 0) {
-        setUsersData((prevState) => ({
-          ...prevState,
-          allUsers: prevState.allUsers.filter(
+        setUsersData((prevState) => {
+          const updatedUsers = prevState.allUsers.filter(
             (user) => user._id !== filterWhoSend[0]._id
-          ),
-          recievedReq: prevState.allUsers.filter(
+          );
+          const updatedRecievedReq = prevState.allUsers.filter(
             (user) => user._id === filterWhoSend[0]._id
-          ),
-          requestUser: prevState.requestUser || [],
-        }));
-      } else {
-        console.log("Lol kei aako xaina");
+          );
+          return {
+            ...prevState,
+            allUsers: updatedUsers,
+            recievedReq: updatedRecievedReq,
+          };
+        });
       }
     });
 
     socketInstance.on("tailePathako", ({ pathakoFilter }) => {
-      console.log("Taile pathako request haru yeha xa  hai", pathakoFilter);
-      const pathakoIdharu = pathakoFilter.map((user) => user._id);
       if (Array.isArray(pathakoFilter) && pathakoFilter.length > 0) {
-        setUsersData((prevState) => ({
-          allUsers: prevState.allUsers.filter(
+        setUsersData((prevState) => {
+          const pathakoIdharu = pathakoFilter.map((user) => user._id);
+          const updatedUsers = prevState.allUsers.filter(
             (user) => !pathakoIdharu.includes(user._id)
-          ),
-          recievedReq: prevState.recievedReq || [],
-          requestUser: [...pathakoFilter],
-        }));
+          );
+          return {
+            ...prevState,
+            allUsers: updatedUsers,
+            requestUser: pathakoFilter,
+          };
+        });
       }
     });
 
     socketInstance.on("cancelHanyo", ({ filterHaneko }) => {
-      console.log("AAyeko data", filterHaneko);
-      setUsersData((prevState) => ({
-        allUsers: [...prevState.allUsers, ...filterHaneko],
-        recievedReq: prevState.recievedReq.filter(
-          (user) => user._id !== filterHaneko[0]._id
-        ),
-        requestUser: prevState.requestUser,
-      }));
+      setUsersData((prevState) => {
+        const updatedUsers = [...prevState.allUsers, ...filterHaneko];
+        return {
+          ...prevState,
+          allUsers: updatedUsers,
+          recievedReq: prevState.recievedReq.filter(
+            (user) => user._id !== filterHaneko[0]._id
+          ),
+        };
+      });
     });
 
     socketInstance.on("acceptvayo", ({ kasle, kasko }) => {
-      console.log(
-        `${kasle} yesle chain ${kasko} yesko request accept hanexa ni yar`
-      );
-      const totalIds = [kasle, kasko];
-
-      setUsersData((prevState) => ({
-        allUsers: prevState.allUsers,
-        recievedReq: prevState.recievedReq.filter(
-          (user) => !totalIds.includes(user._id)
-        ),
-        requestUser: prevState.requestUser.filter(
-          (user) => !totalIds.includes(user._id)
-        ),
-      }));
+      setUsersData((prevState) => {
+        const updatedRecievedReq = prevState.recievedReq.filter(
+          (user) => user._id !== kasle && user._id !== kasko
+        );
+        const updatedRequestUser = prevState.requestUser.filter(
+          (user) => user._id !== kasle && user._id !== kasko
+        );
+        return {
+          ...prevState,
+          recievedReq: updatedRecievedReq,
+          requestUser: updatedRequestUser,
+        };
+      });
     });
 
     return () => {
@@ -104,66 +103,47 @@ const UserList = () => {
   }, []);
 
   useEffect(() => {
-    if (userId && socket) {
-      socket.emit("register", { userId });
-      socket.emit("getUserList", { userId });
+    if (userId && socketRef.current) {
+      socketRef.current.emit("register", { userId });
+      socketRef.current.emit("getUserList", { userId });
       setTimeout(() => {
-        socket.emit("requestHaru", { userId });
+        socketRef.current.emit("requestHaru", { userId });
       }, 10);
-      socket.emit("sendHanekoRequest", { userId });
+      socketRef.current.emit("sendHanekoRequest", { userId });
     }
-  }, [userId, socket]);
+  }, [userId]);
 
   const getTwoLetter = (name) => {
     if (!name) return "";
-    const seperatedName = name.split("");
-    const joinName = seperatedName.slice(0, 2).join("");
-    return joinName;
+    return name.slice(0, 2).toUpperCase();
   };
 
   const sendRequest = (to) => {
-    socket.emit("sendRequest", { from: userId, to: to });
-    console.log(`${userId} sent request to ${to}`);
-
+    socketRef.current.emit("sendRequest", { from: userId, to });
     setUsersData((prevState) => {
-      const targetUser = prevState.allUsers.filter((user) => user._id === to);
-
-      if (!targetUser) {
-        return prevState;
-      }
-
+      const targetUser = prevState.allUsers.find((user) => user._id === to);
       return {
+        ...prevState,
         allUsers: prevState.allUsers.filter((user) => user._id !== to),
-        recievedReq: prevState.recievedReq,
-        requestUser: [...prevState.requestUser, ...targetUser],
+        requestUser: [...prevState.requestUser, targetUser],
       };
     });
   };
 
-  useEffect(() => {
-    console.log(usersData);
-  }, [usersData]);
-
   const acceptRequest = (id) => {
-    console.log("Accepted hane hai ta kta hio");
-    socket.emit("requestAcceptHanyo", { kasle: userId, kasko: id });
+    socketRef.current.emit("requestAcceptHanyo", { kasle: userId, kasko: id });
   };
 
   const cancelRequest = (id) => {
-    // console.log(`${userId} is trying to cancel the request of ${id}`);
+    socketRef.current.emit("cancelRequest", { kasle: userId, kasko: id });
     setUsersData((prevState) => {
-      const targetUser = prevState.requestUser.filter(
-        (user) => user._id === id
-      );
-      console.log("Yo ho hai ta target user", targetUser);
-
+      const targetUser = prevState.requestUser.find((user) => user._id === id);
       return {
-        allUsers: [...prevState.allUsers, ...targetUser],
-        recievedReq: prevState.recievedReq,
+        ...prevState,
+        allUsers: [...prevState.allUsers, targetUser],
         requestUser: prevState.requestUser.filter((user) => user._id !== id),
       };
     });
-    socket.emit("cancelRequest", { kasle: userId, kasko: id });
   };
 
   const buttonClasses = {
@@ -172,67 +152,58 @@ const UserList = () => {
     "Cancel Request": "btn-cancel-request",
   };
 
-  useEffect(() => {
-    console.log(usersData);
-  }, [usersData]);
-
-  const UserCard = ({ user, onAction, buttonText, onClick }) => {
+  const UserCard = React.memo(({ user, onAction, buttonText, onClick }) => {
     const newName = getTwoLetter(user.firstName);
     return (
-      <>
-        <div className="user-card" key={user._id}>
-          <span className="two-letter">{newName}</span>
-          <div className="user-info">
-            <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
-          </div>
-          <div className="user-actions">
-            <button className="btn-view-profile">View Profile</button>
-            <button
-              onClick={onClick}
-              className={buttonClasses[buttonText] || "btn-default"}
-            >
-              {buttonText}
-            </button>
-          </div>
+      <div className="user-card" key={user._id}>
+        <span className="two-letter">{newName}</span>
+        <div className="user-info">
+          <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
         </div>
-      </>
+        <div className="user-actions">
+          <button className="btn-view-profile">View Profile</button>
+          <button
+            onClick={onClick}
+            className={buttonClasses[buttonText] || "btn-default"}
+          >
+            {buttonText}
+          </button>
+        </div>
+      </div>
     );
-  };
+  });
 
   return (
     <div className="user-list">
-      {usersData.recievedReq?.length > 0 &&
-        usersData.recievedReq.map((user) => (
-          <UserCard
-            key={user._id}
-            user={user}
-            onAction={acceptRequest}
-            buttonText="Accept Request"
-            onClick={() => acceptRequest(user._id)}
-          />
-        ))}
+      {usersData.recievedReq.map((user) => (
+        <UserCard
+          key={user._id}
+          user={user}
+          onAction={acceptRequest}
+          buttonText="Accept Request"
+          onClick={() => acceptRequest(user._id)}
+        />
+      ))}
 
-      {usersData.allUsers?.length > 0 &&
-        usersData.allUsers.map((user) => (
-          <UserCard
-            key={user._id}
-            user={user}
-            onAction={sendRequest}
-            buttonText="Send Request"
-            onClick={() => sendRequest(user._id)}
-          />
-        ))}
+      {usersData.allUsers.map((user) => (
+        <UserCard
+          key={user._id}
+          user={user}
+          onAction={sendRequest}
+          buttonText="Send Request"
+          onClick={() => sendRequest(user._id)}
+        />
+      ))}
 
-      {usersData.requestUser?.length > 0 &&
-        usersData.requestUser.map((user) => (
-          <UserCard
-            key={user._id}
-            user={user}
-            onAction={cancelRequest}
-            buttonText="Cancel Request"
-            onClick={() => cancelRequest(user._id)}
-          />
-        ))}
+      {usersData.requestUser.map((user) => (
+        <UserCard
+          key={user._id}
+          user={user}
+          onAction={cancelRequest}
+          buttonText="Cancel Request"
+          onClick={() => cancelRequest(user._id)}
+        />
+      ))}
     </div>
   );
 };
