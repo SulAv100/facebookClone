@@ -13,10 +13,13 @@ const {
 const initSocketServer = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: ["http://localhost:3000", "*"],
       credentials: true,
+      methods: "GET,POST,PATCH,PUT,DELETE",
+      allowedHeaders: "Content-Type,Authorization",
     },
   });
+
   const userSockets = {};
 
   io.on("connection", (socket) => {

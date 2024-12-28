@@ -107,7 +107,7 @@ const friendKoXa = async (userId) => {
     
     return yeskoFriends;
     // console.log(typeof yeskoFriends);
-    console.log(yeskoFriends);
+    // console.log(yeskoFriends);
   } catch (error) {
     console.log(error);
   }

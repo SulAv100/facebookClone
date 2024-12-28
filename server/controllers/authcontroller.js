@@ -1,5 +1,6 @@
 const userModel = require("../models/usermodel.js");
 const requestModel = require("../models/requestmodel.js");
+const postModel = require("../models/postmodel.js");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 
@@ -157,81 +158,59 @@ const logout = async (req, res) => {
   }
 };
 
-const sendRequest = async (req, res) => {
+const posting = async (req, res) => {
   try {
-    const { from, to } = req.body;
-    const findRequest = await requestModel.findOne({ from, to });
-    if (findRequest) {
-      console.log("Already send an request");
+    const { userId, postHeading, fileType } = req.body;
 
-      return;
-    }
-    const newRequest = new requestModel({
-      from: from,
-      to: to,
-    });
-    await newRequest.save();
-    return res.status(201).json({ msg: "Successfully sent the request" });
-  } catch (error) {
-    return res.status(505).json({ msg: "Internal server error occured" });
-  }
-};
+    const fileName = req.file.filename;
 
-const cancelRequest = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const isPresent = await requestModel.findOneAndDelete({ to: userId });
-    if (isPresent) {
-      return res.status(201).json({ msg: "Request unsent successfully" });
+    const isPresent = await postModel.findOne({ userId: userId });
+    if (!isPresent) {
+      console.log("This user hasnt posted a single post till now");
+      const newPost = new postModel({
+        userId,
+        content: [
+          {
+            heading: postHeading,
+            contentType: fileType,
+            image: fileType === "image" ? `/uploads/${fileName}` : null,
+            video: fileType === "video" ? `/uploads/${fileName}` : null,
+          },
+        ],
+      });
+
+      await newPost.save();
+      return res.status(203).json({ msg: "New post created successfully" });
+    } else {
     }
-    return res.status(404).json({ msg: "Request wasnt found" });
   } catch (error) {
     console.error(error);
   }
 };
 
-const getFriends = async (req, res) => {
+const getRelatedPosts = async (req, res) => {
   try {
+    console.log("This is the userId", req.body);
     const { userId } = req.body;
-    const availableRequest = await requestModel.find({ to: userId });
+    // user le haleko posts haru first ma
+    //   user ko friends array lai access hanera tiniaru le kunai post
+    // hanexa ki nai check hanne ani yeuta array ma rakhera
+    //  time stamp aanusar teslia sort garera return ???
+    //  Possible - 1 (difficulty medium method: recursive )
 
-    const present = await requestModel.aggregate([
-      {
-        $match: {
-          to: { $eq: new mongoose.Types.ObjectId(userId) },
-        },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "to",
-          foreignField: "_id",
-          as: "userData",
-        },
-      },
-      {
-        $project: {
-          "userData.password": 0,
-          "userData.email": 0,
-          "userData.gender": 0,
-          "userData.friends": 0,
-          "userData.date": 0,
-        },
-      },
-    ]);
+    // const userPostsArray = await postModel.aggregate([
+    //   {
+    //     $match: {
+    //       userId: { $eq: userId },
+    //     },
+    //   },
+    // ]);
 
-    // console.log("Yo ho hai payeko haru ta", present);
-
-    const requestSender = present.map((user) => user.userData);
-    console.log("Final yo ho hai ta", requestSender);
-
-    if (requestSender.length < 1) {
-      return res.status(401).json({ msg: "No requests available right now" });
-    }
-
-    return res.status(202).json(requestSender);
+    const userPostsArray = await postModel.findOne({ userId: userId });
+    console.log("Match vayeko data haru yei ho hai ta", userPostsArray);
+    return res.status(202).json(userPostsArray);
   } catch (error) {
-    return res.status(505).json({ msg: "Server error occured" });
+    return res.status(505).json({ msg: "Internal Server Error occured" });
   }
 };
 
@@ -241,7 +220,6 @@ module.exports = {
   verifyUser,
   getUsers,
   logout,
-  sendRequest,
-  cancelRequest,
-  getFriends,
+  getRelatedPosts,
+  posting,
 };

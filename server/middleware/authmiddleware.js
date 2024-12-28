@@ -3,7 +3,7 @@ const userModel = require("../models/usermodel.js");
 
 const authMiddleware = async (req, res, next) => {
   const token = req.cookies.token;
-  console.log("Yo ho hai ta token", token);
+  // console.log("Yo ho hai ta token", token);
 
   if (!token || token === undefined) {
     return res.status(404).json({ msg: "Invalid auth token found" });

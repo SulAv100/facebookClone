@@ -5,6 +5,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const authRoute = require("./router/authrouter.js");
 const http = require("http");
+const path = require("path");
 // const socketIo = require("socket.io");
 
 dotenv.config();
@@ -14,8 +15,10 @@ const app = express();
 const server = http.createServer(app);
 // const io = socketIo(server);
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "*"],
   credentials: true,
   methods: "GET,POST,PATCH,PUT,DELETE",
   allowedHeaders: "Content-Type,Authorization",
